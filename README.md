@@ -1,114 +1,116 @@
-# EXp3rience 🎧 — 音を、取り戻せ。
+# Alice — Rhythm Game
 
-Jeu de rythme musical en navigateur — démo **solo** jouable, direction artistique
-anime japonais (fin de journée à l'école, sakura, ciel de crépuscule).
+Alice est un jeu de rythme web en **2K / 4K**. Tu uploades une musique locale, Alice génère une partition jouable, puis la musique joue en continu pendant que tu suis les notes au clavier.
 
-Concept clé : **le morceau uploadé ne se joue pas tout seul.** Chaque note frappée
-rejoue le fragment réel du morceau à cet instant ; enchaîne les notes et la musique
-se reconstruit, reconnaissable — rate, et tu creuses un trou de silence. Uploade un
-`.mp3` / `.wav`, choisis un instrument détecté dans le morceau, et reconstruis-le
-au clavier.
+L'objectif actuel est simple: une expérience solo rapide, très visuelle, personnalisable, avec des difficultés qui peuvent devenir vraiment dures.
 
-Prototype sérieux pensé pour évoluer vers : un vrai **multijoueur temps réel**, une vraie
-**séparation audio par instrument** (IA côté serveur) et un **portage Roblox** avec la même
-logique de gameplay.
-
-## Lancer le projet
+## Lancer Le Projet
 
 ```bash
 npm install
-npm run dev     # http://localhost:3000
+npm run dev
 ```
 
-Build production (compatible Vercel, zéro configuration) :
+Puis ouvre:
+
+```txt
+http://localhost:3000
+```
+
+Build production:
 
 ```bash
 npm run build
 npm start
 ```
 
-Aucune variable d'environnement n'est requise pour la démo. Supabase est préparé mais
-optionnel — voir [`.env.example`](.env.example).
+Aucune variable d'environnement n'est nécessaire pour jouer à la démo locale.
+
+## Gameplay
+
+1. Va dans **Solo**.
+2. Upload une musique `.mp3` ou `.wav`.
+3. Alice analyse le morceau dans le navigateur.
+4. Choisis un mode:
+   - **2K**: touches `F` `J`
+   - **4K**: touches `X` `C` `N` `,`
+5. Choisis rapidement la difficulté de **1 à 10**.
+6. Lance la partie.
+
+La musique ne dépend plus des touches: elle joue en continu. Les touches servent au score, au combo, aux effets visuels et à éviter une série de misses.
+
+## Difficultés
+
+Alice propose **10 niveaux**:
+
+- `1-2`: simple / normal
+- `3-5`: dense mais lisible
+- `6-10`: modes beaucoup plus rapides avec des notes ajoutées entre les transients détectés
+
+Les difficultés se changent rapidement depuis une grille `1 2 3 4 5 / 6 7 8 9 10`, sans relancer l'analyse.
+
+## Misses Et Perte
+
+Les erreurs ne coupent pas la musique.
+
+Quand tu rates plusieurs notes d'affilée:
+
+- les effets visuels deviennent de plus en plus agressifs;
+- la stabilité baisse;
+- après une trop longue série de misses, Alice affiche l'écran **Perdu**.
+
+Les touches pressées dans le vide n'influencent pas la musique.
+
+## Personnalisation
+
+Dans les options simples, tu peux changer rapidement:
+
+- la difficulté;
+- le fond de partie;
+- la couleur des touches;
+- le mode solo / duel verrouillé.
+
+Tu peux aussi choisir une image locale comme background de gameplay:
+
+- `.png`
+- `.jpg`
+- `.webp`
+
+Le mode avancé contient les réglages plus techniques:
+
+- volume de la musique;
+- latence clavier;
+- vitesse des notes.
 
 ## Stack
 
-| Domaine | Choix |
+| Partie | Tech |
 | --- | --- |
-| Framework | Next.js (App Router) + TypeScript |
+| Framework | Next.js App Router |
+| Langage | TypeScript |
+| UI | React |
 | Styles | Tailwind CSS |
-| Animations UI | Framer Motion |
-| État de session | Zustand |
-| Audio | Web Audio API (décodage, analyse, lecture synchronisée) |
-| Rendu gameplay | Canvas 2D + `requestAnimationFrame` |
-| Backend (préparé) | Supabase (client isolé, types de tables, non requis) |
-
-## Comment jouer
-
-1. **Menu** → Solo.
-2. **Upload** d'un `.mp3` / `.wav` (drag & drop).
-3. L'**analyse locale** détecte les transients par bande de fréquences, mesure la
-   **présence de chaque instrument** dans le morceau (un titre sans basse ne proposera
-   pas la basse, une ballade sans percussions ne proposera pas la batterie) et génère
-   une partition par instrument détecté (approximation honnête — voir plus bas).
-4. **Choisis ton instrument** puis tes **options** (bots, voix, musique fantôme,
-   volume des frappes, latence, vitesse, difficulté).
-5. Countdown **3 · 2 · 1 · GO** — puis silence : c'est à toi de jouer.
-6. Chaque frappe réussie joue le **fragment réel du morceau** jusqu'à la note suivante ;
-   enchaîne-les et la musique se reconstruit en continu. Fenêtres de jugement :
-
-   | Fenêtre | Jugement |
-   | --- | --- |
-   | ±40 ms | PERFECT |
-   | ±80 ms | GREAT (early/late affiché) |
-   | ±120 ms | GOOD (early/late affiché) |
-   | au-delà | MISS |
-
-### Touches (clavier AZERTY)
-
-| Instrument | Pistes | Touches |
-| --- | --- | --- |
-| Guitare électrique | 2 | `F` `J` |
-| Guitare acoustique | 2 | `F` `J` |
-| Piano | 4 | `X` `C` `N` `,` |
-| Batterie | 4 | `X` `C` `N` `,` |
-| Basse | 4 | `X` `C` `N` `,` |
-
-La 4ᵉ touche est bien la **virgule** (touche à droite de N sur AZERTY) — le jeu compare
-`KeyboardEvent.key`, donc le caractère réel, pas la position physique.
-
-`Échap` = pause (reprendre / recommencer / quitter).
-
-## ⚠️ Analyse audio : démo vs futur
-
-La démo utilise le **DemoLocalAudioEngine** (`lib/audio/demoLocalAudioEngine.ts`) :
-une analyse **locale et approximative** — détection de pics d'énergie par bande de
-fréquences (biquad band-pass par instrument), répartition sur les pistes par heuristique
-de brillance. Ce n'est **pas** une vraie séparation d'instruments, mais c'est jouable et
-musical.
-
-L'architecture est prête pour brancher le **FutureStemSeparationEngine**
-(`lib/audio/futureStemSeparationEngine.ts`) : upload Supabase Storage → worker serveur
-(Demucs/Spleeter) → stems par instrument → beatmaps précises stockées et mises en cache.
-Même interface `AnalysisEngine`, zéro changement côté gameplay.
-Détails : [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+| Animations | Framer Motion |
+| État | Zustand |
+| Audio | Web Audio API |
+| Gameplay | Canvas 2D |
 
 ## Structure
 
-```
-app/                  Pages (/, /solo, /game, /settings, /credits)
-components/menu/      Menu principal (background animé, boutons, logo)
-components/game/      Gameplay (canvas, HUD, pause, résultats, instruments, options)
-components/audio/     Upload + progression d'analyse
-components/ui/        Shell de page partagé
-lib/audio/            Analyse (decode/onsets/beatmap), moteurs demo & futur, lecture
-lib/game/             Instruments, jugement/score, filtres de chart, store Zustand
-lib/supabase/         Client optionnel + types des tables futures
-types/                Types du domaine (portables, sans dépendance navigateur)
-docs/                 ARCHITECTURE, MULTIPLAYER_PLAN, ROBLOX_PORT_PLAN
+```txt
+app/                  Pages principales
+components/menu/      Menu, logo, boutons, background
+components/game/      Gameplay, options, pause, résultats
+components/audio/     Upload et progression d'analyse
+components/ui/        UI partagée, curseur custom, shell
+lib/audio/            Décodage, analyse, playback
+lib/game/             Chart, jugement, layouts 2K/4K, store
+types/                Types partagés
+docs/                 Plans architecture, multijoueur, Roblox
 ```
 
-## Docs
+## Notes
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — vue d'ensemble, moteur audio 2 niveaux, schéma Supabase futur.
-- [`docs/MULTIPLAYER_PLAN.md`](docs/MULTIPLAYER_PLAN.md) — plan du multijoueur (rooms, Realtime, sync horloge).
-- [`docs/ROBLOX_PORT_PLAN.md`](docs/ROBLOX_PORT_PLAN.md) — plan de portage Roblox + format JSON de beatmap.
+Le bouton **Duel** dans le menu est volontairement verrouillé pour l'instant.
+
+L'analyse audio est locale et approximative: Alice détecte les pics du morceau et construit une chart jouable. Ce n'est pas encore une transcription musicale parfaite.
